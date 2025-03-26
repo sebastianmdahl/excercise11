@@ -1,19 +1,31 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
-import * as process from "node:process";
+import pg from "pg";
 
 const app = new Hono();
 
-app.get("/api/hello", async (c) => {
-  return c.text("Hello Hono!");
+const postgresql = new pg.Pool({
+  user: "postgres",
+  password: "postgres",
+  host: "localhost",
+  port: 5432,
+  database: "postgres",
 });
 
-// Serve static files from the frontend build
-app.use("*", serveStatic({ root: "../dist" }));
+app.get("/api/skoler", async (c) => {
+  const result = await postgresql.query(`
+    SELECT skolenavn, ST_AsGeoJSON(ST_Transform(posisjon, 4326)) AS geojson
+    FROM grunnskoler_3697913259634315b061b324a3f2cf59.grunnskole
+  `);
 
-// Start the server on the correct port
-serve({
-  fetch: app.fetch,
-  port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
+  return c.json({
+    type: "FeatureCollection",
+    features: result.rows.map((row) => ({
+      type: "Feature",
+      properties: { skolenavn: row.skolenavn },
+      geometry: JSON.parse(row.geojson),
+    })),
+  });
 });
+
+serve({ fetch: app.fetch, port: 3000 });
