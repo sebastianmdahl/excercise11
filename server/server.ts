@@ -28,4 +28,5 @@ app.get("/api/skoler", async (c) => {
   });
 });
 
-serve({ fetch: app.fetch, port: 3000 });
+const port = parseInt(process.env.PORT || "3000");
+serve({ fetch: app.fetch, port });
