@@ -1,16 +1,27 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import pg from "pg";
+import "dotenv/config";
 
 const app = new Hono();
 
-const postgresql = new pg.Pool({
-  user: "postgres",
-  password: "postgres",
-  host: "localhost",
-  port: 5432,
-  database: "postgres",
-});
+const connectionString = process.env.DATABASE_URL;
+
+const postgresql = connectionString
+  ? new pg.Pool({
+      connectionString,
+      ssl: connectionString.includes("amazonaws")
+        ? { rejectUnauthorized: false }
+        : undefined,
+    })
+  : new pg.Pool({
+      user: "postgres",
+      password: "postgres",
+      host: "localhost",
+      port: 5432,
+      database: "postgres",
+    });
 
 app.get("/api/skoler", async (c) => {
   const result = await postgresql.query(`
@@ -27,6 +38,9 @@ app.get("/api/skoler", async (c) => {
     })),
   });
 });
+
+// 👇 Serve React app
+app.use("*", serveStatic({ root: "./dist" }));
 
 const port = parseInt(process.env.PORT || "3000");
 serve({ fetch: app.fetch, port });
