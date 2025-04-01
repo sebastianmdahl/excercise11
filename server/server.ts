@@ -40,7 +40,7 @@ app.get("/api/skoler", async (c) => {
 });
 
 // 👇 Serve React app
-app.use("*", serveStatic({ root: "./dist" }));
+app.use("*", serveStatic({ root: "../dist" }));
 
 const port = parseInt(process.env.PORT || "3000");
 serve({ fetch: app.fetch, port });
