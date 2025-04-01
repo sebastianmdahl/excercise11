@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import pg from "pg";
 import "dotenv/config";
 
@@ -23,6 +22,10 @@ const postgresql = connectionString
       database: "postgres",
     });
 
+app.get("/hello", async (c) => {
+  return c.text("Hello somebody");
+});
+
 app.get("/api/skoler", async (c) => {
   const result = await postgresql.query(`
     SELECT skolenavn, ST_AsGeoJSON(ST_Transform(posisjon, 4326)) AS geojson
@@ -40,7 +43,4 @@ app.get("/api/skoler", async (c) => {
 });
 
 // 👇 Serve React app
-app.use("*", serveStatic({ root: "../dist" }));
-
-const port = parseInt(process.env.PORT || "3000");
-serve({ fetch: app.fetch, port });
+serve(app);
